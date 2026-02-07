@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../app_log.dart';
 import '../seed_loader.dart';
+import 'favorites_store.dart';
 
 class WordsScreen extends StatefulWidget {
   const WordsScreen({super.key});
@@ -13,8 +14,10 @@ class WordsScreen extends StatefulWidget {
 class _WordsScreenState extends State<WordsScreen> {
   final TextEditingController _searchController = TextEditingController();
   final SeedLoader _seedLoader = const SeedLoader();
+  final FavoritesStore _favoritesStore = FavoritesStore();
   List<WordItem> _items = <WordItem>[];
   bool _loading = true;
+  bool _favoritesOnly = false;
 
   @override
   void initState() {
@@ -27,6 +30,7 @@ class _WordsScreenState extends State<WordsScreen> {
     setState(() {
       _loading = true;
     });
+    await _favoritesStore.load();
     final List<WordItem> loaded = await _seedLoader.loadWords();
     if (!mounted) {
       return;
@@ -51,10 +55,14 @@ class _WordsScreenState extends State<WordsScreen> {
 
   List<WordItem> _filteredItems() {
     final String query = _searchController.text.trim().toLowerCase();
-    if (query.isEmpty) {
-      return _items;
-    }
     return _items.where((WordItem item) {
+      if (_favoritesOnly &&
+          !_favoritesStore.isFavorite(item.id.toString())) {
+        return false;
+      }
+      if (query.isEmpty) {
+        return true;
+      }
       final String word = item.word.toLowerCase();
       final String translation = item.translation.toLowerCase();
       final String transcription = item.transcription?.toLowerCase() ?? '';
@@ -83,6 +91,15 @@ class _WordsScreenState extends State<WordsScreen> {
               ),
             ),
           ),
+          SwitchListTile(
+            title: const Text('Только избранное'),
+            value: _favoritesOnly,
+            onChanged: (bool value) {
+              setState(() {
+                _favoritesOnly = value;
+              });
+            },
+          ),
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
@@ -101,12 +118,39 @@ class _WordsScreenState extends State<WordsScreen> {
                                   ? 'Нет перевода'
                                   : item.translation,
                             ),
-                            trailing: const Icon(Icons.chevron_right),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: Icon(
+                                    _favoritesStore
+                                            .isFavorite(item.id.toString())
+                                        ? Icons.star
+                                        : Icons.star_border,
+                                  ),
+                                  onPressed: () async {
+                                    await _favoritesStore.toggle(
+                                      item.id.toString(),
+                                    );
+                                    if (mounted) {
+                                      setState(() {});
+                                    }
+                                  },
+                                ),
+                                const Icon(Icons.chevron_right),
+                              ],
+                            ),
                             onTap: () {
                               Navigator.of(context).push(
                                 MaterialPageRoute<void>(
                                   builder: (BuildContext context) =>
-                                      WordDetailScreen(item: item),
+                                      WordDetailScreen(
+                                        item: item,
+                                        favoritesStore: _favoritesStore,
+                                        onToggle: () {
+                                          setState(() {});
+                                        },
+                                      ),
                                 ),
                               );
                             },
@@ -120,14 +164,30 @@ class _WordsScreenState extends State<WordsScreen> {
   }
 }
 
-class WordDetailScreen extends StatelessWidget {
-  const WordDetailScreen({super.key, required this.item});
+class WordDetailScreen extends StatefulWidget {
+  const WordDetailScreen({
+    super.key,
+    required this.item,
+    required this.favoritesStore,
+    required this.onToggle,
+  });
 
   final WordItem item;
+  final FavoritesStore favoritesStore;
+  final VoidCallback onToggle;
+
+  @override
+  State<WordDetailScreen> createState() => _WordDetailScreenState();
+}
+
+class _WordDetailScreenState extends State<WordDetailScreen> {
+  bool get _isFavorite =>
+      widget.favoritesStore.isFavorite(widget.item.id.toString());
 
   @override
   Widget build(BuildContext context) {
     final TextTheme textTheme = Theme.of(context).textTheme;
+    final WordItem item = widget.item;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Слово'),
@@ -177,6 +237,27 @@ class WordDetailScreen extends StatelessWidget {
               }
             },
             child: const Text('Записать в лог'),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton(
+            onPressed: () async {
+              final bool nowFavorite =
+                  await widget.favoritesStore.toggle(item.id.toString());
+              widget.onToggle();
+              if (mounted) {
+                setState(() {});
+              }
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      nowFavorite ? 'В избранном' : 'Убрано из избранного',
+                    ),
+                  ),
+                );
+              }
+            },
+            child: Text(_isFavorite ? 'Убрать' : 'В избранное'),
           ),
         ],
       ),
