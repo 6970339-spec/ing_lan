@@ -69,10 +69,8 @@ class _WordsScreenState extends State<WordsScreen> {
       }
       final String word = item.ingush.toLowerCase();
       final String translation = item.russian.toLowerCase();
-      final String transcription = item.transcription?.toLowerCase() ?? '';
       return word.contains(query) ||
-          translation.contains(query) ||
-          transcription.contains(query);
+          translation.contains(query);
     }).toList(growable: false);
   }
 
