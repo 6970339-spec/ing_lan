@@ -1,0 +1,55 @@
+name: Build Android APK (manual)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile_app
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Prepare logs
+        run: |
+          mkdir -p ../build-logs
+          {
+            echo "== flutter --version ==";
+            flutter --version;
+            echo "";
+            echo "== flutter doctor -v ==";
+            flutter doctor -v;
+            echo "";
+            echo "== flutter pub get ==";
+            flutter pub get;
+            echo "";
+            echo "== flutter build apk ==";
+            flutter build apk --debug -v;
+          } 2>&1 | tee ../build-logs/build.log
+
+      - name: Upload build logs (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: build-logs
+
+      - name: Upload APK (success only)
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-apk
+          path: mobile_app/build/app/outputs/flutter-apk/app-debug.apk
