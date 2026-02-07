@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../app_log.dart';
-import '../seed_loader.dart';
+import '../data/data_repo.dart';
+import '../data/models.dart';
 import 'favorites_store.dart';
 
 class WordsScreen extends StatefulWidget {
@@ -13,7 +14,7 @@ class WordsScreen extends StatefulWidget {
 
 class _WordsScreenState extends State<WordsScreen> {
   final TextEditingController _searchController = TextEditingController();
-  final SeedLoader _seedLoader = const SeedLoader();
+  final DataRepo _dataRepo = const DataRepo();
   final FavoritesStore _favoritesStore = FavoritesStore();
   List<WordItem> _items = <WordItem>[];
   List<ExampleItem> _examples = <ExampleItem>[];
@@ -32,13 +33,14 @@ class _WordsScreenState extends State<WordsScreen> {
       _loading = true;
     });
     await _favoritesStore.load();
-    final SeedData data = await _seedLoader.loadData();
+    final List<WordItem> words = await _dataRepo.loadWords();
+    final List<ExampleItem> examples = await _dataRepo.loadExamples();
     if (!mounted) {
       return;
     }
     setState(() {
-      _items = data.words;
-      _examples = data.examples;
+      _items = words;
+      _examples = examples;
       _loading = false;
     });
   }
