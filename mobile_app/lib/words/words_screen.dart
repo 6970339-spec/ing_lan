@@ -14,10 +14,9 @@ class WordsScreen extends StatefulWidget {
 
 class _WordsScreenState extends State<WordsScreen> {
   final TextEditingController _searchController = TextEditingController();
-  final DataRepo _dataRepo = const DataRepo();
+  final DataRepo _dataRepo = DataRepo.instance;
   final FavoritesStore _favoritesStore = FavoritesStore();
   List<WordItem> _items = <WordItem>[];
-  List<ExampleItem> _examples = <ExampleItem>[];
   bool _loading = true;
   bool _favoritesOnly = false;
 
@@ -33,14 +32,12 @@ class _WordsScreenState extends State<WordsScreen> {
       _loading = true;
     });
     await _favoritesStore.load();
-    final List<WordItem> words = await _dataRepo.loadWords();
-    final List<ExampleItem> examples = await _dataRepo.loadExamples();
+    final List<WordItem> words = await _dataRepo.getWords();
     if (!mounted) {
       return;
     }
     setState(() {
       _items = words;
-      _examples = examples;
       _loading = false;
     });
   }
@@ -152,7 +149,6 @@ class _WordsScreenState extends State<WordsScreen> {
                                       builder: (BuildContext context) =>
                                       WordDetailScreen(
                                         item: item,
-                                        examples: _examples,
                                         favoritesStore: _favoritesStore,
                                         onToggle: () {
                                           setState(() {});
@@ -175,13 +171,11 @@ class WordDetailScreen extends StatefulWidget {
   const WordDetailScreen({
     super.key,
     required this.item,
-    required this.examples,
     required this.favoritesStore,
     required this.onToggle,
   });
 
   final WordItem item;
-  final List<ExampleItem> examples;
   final FavoritesStore favoritesStore;
   final VoidCallback onToggle;
 
@@ -192,14 +186,44 @@ class WordDetailScreen extends StatefulWidget {
 class _WordDetailScreenState extends State<WordDetailScreen> {
   bool get _isFavorite =>
       widget.favoritesStore.isFavorite(widget.item.id.toString());
+  final DataRepo _dataRepo = DataRepo.instance;
   List<ExampleItem> _linkedExamples = <ExampleItem>[];
+  bool _loadingExamples = true;
+  String? _loadError;
 
   @override
   void initState() {
     super.initState();
-    _linkedExamples = widget.examples
-        .where((ExampleItem example) => example.wordId == widget.item.id)
-        .toList(growable: false);
+    _loadExamples();
+  }
+
+  Future<void> _loadExamples() async {
+    try {
+      final List<ExampleItem> examples =
+          await _dataRepo.getExamplesForWord(widget.item.id);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _linkedExamples = examples;
+        _loadingExamples = false;
+        _loadError = null;
+      });
+    } catch (error, stackTrace) {
+      await AppLog.instance.e(
+        'WordDetail: failed to load examples.',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _linkedExamples = <ExampleItem>[];
+        _loadingExamples = false;
+        _loadError = 'Не удалось загрузить примеры';
+      });
+    }
   }
 
   @override
@@ -231,7 +255,11 @@ class _WordDetailScreenState extends State<WordDetailScreen> {
             item.russian.isEmpty ? 'Нет перевода' : item.russian,
             style: textTheme.titleLarge,
           ),
-          if (_linkedExamples.isNotEmpty) ...[
+          if (_loadingExamples) ...[
+            const SizedBox(height: 24),
+            const Center(child: CircularProgressIndicator()),
+          ],
+          if (!_loadingExamples && _linkedExamples.isNotEmpty) ...[
             const SizedBox(height: 24),
             Text(
               'Примеры',
@@ -267,12 +295,12 @@ class _WordDetailScreenState extends State<WordDetailScreen> {
               ),
             ),
           ],
-          if (_linkedExamples.isEmpty) ...[
+          if (!_loadingExamples && _linkedExamples.isEmpty) ...[
             const SizedBox(height: 24),
             Text(
-              'Нет примеров',
+              _loadError ?? 'Нет примеров',
               style: textTheme.titleMedium?.copyWith(
-                color: Colors.redAccent,
+                color: _loadError == null ? Colors.redAccent : Colors.orange,
               ),
             ),
           ],

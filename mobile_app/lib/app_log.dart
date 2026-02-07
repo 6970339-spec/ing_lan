@@ -62,6 +62,18 @@ class AppLog extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> e(
+    String message, {
+    Object? error,
+    StackTrace? stackTrace,
+  }) async {
+    await add(
+      message,
+      error: error ?? 'Unknown error',
+      stackTrace: stackTrace,
+    );
+  }
+
   Future<void> clear() async {
     _lines.clear();
     await _persist();
