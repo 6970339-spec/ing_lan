@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'app_log.dart';
+import 'training/training_screen.dart';
 import 'words/words_screen.dart';
 
 Future<void> main() async {
@@ -83,6 +84,18 @@ class HomeScreen extends StatelessWidget {
                 );
               },
               child: const Text('Слова'),
+            ),
+            const SizedBox(height: 12),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (BuildContext context) =>
+                        const TrainingScreen(),
+                  ),
+                );
+              },
+              child: const Text('Тренировка'),
             ),
           ],
         ),
