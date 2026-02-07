@@ -43,6 +43,9 @@ class _WordsScreenState extends State<WordsScreen> {
   }
 
   void _onSearchChanged() {
+    final String query = _searchController.text.trim();
+    final int matches = _filteredItems().length;
+    AppLog.instance.i('Search query="$query" results=$matches');
     setState(() {});
   }
 

@@ -74,6 +74,10 @@ class AppLog extends ChangeNotifier {
     );
   }
 
+  Future<void> i(String message) async {
+    await add(message);
+  }
+
   Future<void> clear() async {
     _lines.clear();
     await _persist();
