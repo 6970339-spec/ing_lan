@@ -6,9 +6,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: mobile_app
     steps:
       - uses: actions/checkout@v4
 
@@ -44,7 +41,6 @@ jobs:
             (cd ci_app && flutter build apk --debug -v)
             echo "== find APK outputs ==";
             find ci_app/build/app/outputs/flutter-apk -maxdepth 1 -type f -name "*.apk" -print -ls || true
-            cp -v ci_app/build/app/outputs/flutter-apk/*.apk apk-out/ || true
           } 2>&1 | tee build-logs/build.log
           exit ${PIPESTATUS[0]}
 
@@ -60,5 +56,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-apk
-          path: apk-out/*.apk
+          path: ci_app/build/app/outputs/flutter-apk/*.apk
           if-no-files-found: error
