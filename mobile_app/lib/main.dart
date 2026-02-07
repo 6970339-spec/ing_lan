@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'app_log.dart';
+import 'words/words_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -71,6 +72,17 @@ class HomeScreen extends StatelessWidget {
                 );
               },
               child: const Text('Логи'),
+            ),
+            const SizedBox(height: 12),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (BuildContext context) => const WordsScreen(),
+                  ),
+                );
+              },
+              child: const Text('Слова'),
             ),
           ],
         ),
