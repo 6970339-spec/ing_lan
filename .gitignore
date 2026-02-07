@@ -218,3 +218,5 @@ mobile_app/.dart_tool/
 *.log
 **/*.png
 **/*.db
+
+ing_base.db
