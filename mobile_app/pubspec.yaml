@@ -22,3 +22,5 @@ flutter:
   uses-material-design: true
   assets:
     - assets/db/seed.json
+    - assets/db/words.json
+    - assets/db/examples.json

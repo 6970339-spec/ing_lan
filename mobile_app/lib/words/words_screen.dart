@@ -16,6 +16,7 @@ class _WordsScreenState extends State<WordsScreen> {
   final SeedLoader _seedLoader = const SeedLoader();
   final FavoritesStore _favoritesStore = FavoritesStore();
   List<WordItem> _items = <WordItem>[];
+  List<ExampleItem> _examples = <ExampleItem>[];
   bool _loading = true;
   bool _favoritesOnly = false;
 
@@ -31,12 +32,13 @@ class _WordsScreenState extends State<WordsScreen> {
       _loading = true;
     });
     await _favoritesStore.load();
-    final List<WordItem> loaded = await _seedLoader.loadWords();
+    final SeedData data = await _seedLoader.loadData();
     if (!mounted) {
       return;
     }
     setState(() {
-      _items = loaded;
+      _items = data.words;
+      _examples = data.examples;
       _loading = false;
     });
   }
@@ -143,9 +145,10 @@ class _WordsScreenState extends State<WordsScreen> {
                             onTap: () {
                               Navigator.of(context).push(
                                 MaterialPageRoute<void>(
-                                  builder: (BuildContext context) =>
+                                      builder: (BuildContext context) =>
                                       WordDetailScreen(
                                         item: item,
+                                        examples: _examples,
                                         favoritesStore: _favoritesStore,
                                         onToggle: () {
                                           setState(() {});
@@ -168,11 +171,13 @@ class WordDetailScreen extends StatefulWidget {
   const WordDetailScreen({
     super.key,
     required this.item,
+    required this.examples,
     required this.favoritesStore,
     required this.onToggle,
   });
 
   final WordItem item;
+  final List<ExampleItem> examples;
   final FavoritesStore favoritesStore;
   final VoidCallback onToggle;
 
@@ -183,6 +188,32 @@ class WordDetailScreen extends StatefulWidget {
 class _WordDetailScreenState extends State<WordDetailScreen> {
   bool get _isFavorite =>
       widget.favoritesStore.isFavorite(widget.item.id.toString());
+  List<ExampleItem> _linkedExamples = <ExampleItem>[];
+  String? _linkFieldUsed;
+
+  @override
+  void initState() {
+    super.initState();
+    _linkedExamples = widget.examples
+        .where(
+          (ExampleItem example) =>
+              example.wordId == widget.item.id ||
+              (example.wordValue != null &&
+                  example.wordValue == widget.item.word),
+        )
+        .toList(growable: false);
+    _linkFieldUsed = _linkedExamples
+        .map((ExampleItem example) => example.linkField)
+        .firstWhere(
+          (String? value) => value != null && value.isNotEmpty,
+          orElse: () => null,
+        );
+    AppLog.instance.add(
+      _linkFieldUsed == null
+          ? 'WordDetail: link field not found for examples.'
+          : 'WordDetail: linked examples by $_linkFieldUsed.',
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -221,6 +252,32 @@ class _WordDetailScreenState extends State<WordDetailScreen> {
             ),
             const SizedBox(height: 8),
             Text(item.example!),
+          ],
+          if (_linkedExamples.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            Text(
+              'Примеры',
+              style: textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            ..._linkedExamples.map(
+              (ExampleItem example) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(example.text),
+                    if (example.translation != null)
+                      Text(
+                        example.translation!,
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: Colors.blueGrey,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
           ],
           const SizedBox(height: 24),
           FilledButton(
