@@ -10,6 +10,7 @@ class DataRepo {
 
   Future<List<WordItem>> loadWords() async {
     final List<Object?> items = await _loadItems('assets/db/words.json');
+    _logKeysFromFirstItem('words', items);
     if (items.isEmpty) {
       return <WordItem>[];
     }
@@ -21,6 +22,8 @@ class DataRepo {
 
   Future<List<ExampleItem>> loadExamples() async {
     final List<Object?> items = await _loadItems('assets/db/examples.json');
+    _logKeysFromFirstItem('examples', items);
+    _logExampleLinkCandidates(items);
     if (items.isEmpty) {
       return <ExampleItem>[];
     }
@@ -55,6 +58,50 @@ class DataRepo {
         stackTrace: stackTrace,
       );
       return <Object?>[];
+    }
+  }
+
+  void _logKeysFromFirstItem(String label, List<Object?> items) {
+    if (items.isEmpty) {
+      return;
+    }
+    final Object? first = items.first;
+    if (first is Map<String, dynamic>) {
+      final List<String> keys = first.keys.toList()..sort();
+      AppLog.instance.add('DataRepo: $label keys = $keys');
+    }
+  }
+
+  void _logExampleLinkCandidates(List<Object?> items) {
+    if (items.isEmpty) {
+      return;
+    }
+    final List<Map<String, dynamic>> maps =
+        items.whereType<Map<String, dynamic>>().toList();
+    if (maps.isEmpty) {
+      return;
+    }
+    const List<String> candidates = <String>[
+      'word_id',
+      'wordId',
+      'id_word',
+      'wordID',
+      'wordid',
+      'word_ref',
+      'word_fk',
+    ];
+    for (final String candidate in candidates) {
+      final List<String> values = maps
+          .map((Map<String, dynamic> item) => item[candidate])
+          .where((Object? value) => value != null)
+          .take(5)
+          .map((Object? value) => value.toString())
+          .toList();
+      if (values.isNotEmpty) {
+        AppLog.instance.add(
+          'DataRepo: example link values for $candidate: $values',
+        );
+      }
     }
   }
 }

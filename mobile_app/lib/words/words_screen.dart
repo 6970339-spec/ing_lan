@@ -281,6 +281,15 @@ class _WordDetailScreenState extends State<WordDetailScreen> {
               ),
             ),
           ],
+          if (_linkedExamples.isEmpty) ...[
+            const SizedBox(height: 24),
+            Text(
+              'Нет примеров (проверь ключ связи)',
+              style: textTheme.titleMedium?.copyWith(
+                color: Colors.redAccent,
+              ),
+            ),
+          ],
           const SizedBox(height: 24),
           FilledButton(
             onPressed: () async {
