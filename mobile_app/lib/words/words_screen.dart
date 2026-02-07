@@ -67,8 +67,8 @@ class _WordsScreenState extends State<WordsScreen> {
       if (query.isEmpty) {
         return true;
       }
-      final String word = item.word.toLowerCase();
-      final String translation = item.translation.toLowerCase();
+      final String word = item.ingush.toLowerCase();
+      final String translation = item.russian.toLowerCase();
       final String transcription = item.transcription?.toLowerCase() ?? '';
       return word.contains(query) ||
           translation.contains(query) ||
@@ -116,11 +116,13 @@ class _WordsScreenState extends State<WordsScreen> {
                         itemBuilder: (BuildContext context, int index) {
                           final WordItem item = filtered[index];
                           return ListTile(
-                            title: Text(item.word.isEmpty ? '—' : item.word),
+                            title: Text(
+                              item.ingush.isEmpty ? '—' : item.ingush,
+                            ),
                             subtitle: Text(
-                              item.translation.isEmpty
+                              item.russian.isEmpty
                                   ? 'Нет перевода'
-                                  : item.translation,
+                                  : item.russian,
                             ),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -191,30 +193,13 @@ class _WordDetailScreenState extends State<WordDetailScreen> {
   bool get _isFavorite =>
       widget.favoritesStore.isFavorite(widget.item.id.toString());
   List<ExampleItem> _linkedExamples = <ExampleItem>[];
-  String? _linkFieldUsed;
 
   @override
   void initState() {
     super.initState();
     _linkedExamples = widget.examples
-        .where(
-          (ExampleItem example) =>
-              example.wordId == widget.item.id ||
-              (example.wordValue != null &&
-                  example.wordValue == widget.item.word),
-        )
+        .where((ExampleItem example) => example.wordId == widget.item.id)
         .toList(growable: false);
-    _linkFieldUsed = _linkedExamples
-        .map((ExampleItem example) => example.linkField)
-        .firstWhere(
-          (String? value) => value != null && value.isNotEmpty,
-          orElse: () => null,
-        );
-    AppLog.instance.add(
-      _linkFieldUsed == null
-          ? 'WordDetail: link field not found for examples.'
-          : 'WordDetail: linked examples by $_linkFieldUsed.',
-    );
   }
 
   @override
@@ -229,7 +214,7 @@ class _WordDetailScreenState extends State<WordDetailScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           Text(
-            item.word.isEmpty ? '—' : item.word,
+            item.ingush.isEmpty ? '—' : item.ingush,
             style: textTheme.headlineMedium,
           ),
           if (item.transcription != null) ...[
@@ -243,18 +228,9 @@ class _WordDetailScreenState extends State<WordDetailScreen> {
           ],
           const SizedBox(height: 16),
           Text(
-            item.translation.isEmpty ? 'Нет перевода' : item.translation,
+            item.russian.isEmpty ? 'Нет перевода' : item.russian,
             style: textTheme.titleLarge,
           ),
-          if (item.example != null) ...[
-            const SizedBox(height: 24),
-            Text(
-              'Пример',
-              style: textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(item.example!),
-          ],
           if (_linkedExamples.isNotEmpty) ...[
             const SizedBox(height: 24),
             Text(
@@ -265,18 +241,28 @@ class _WordDetailScreenState extends State<WordDetailScreen> {
             ..._linkedExamples.map(
               (ExampleItem example) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(example.text),
-                    if (example.translation != null)
-                      Text(
-                        example.translation!,
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: Colors.blueGrey,
+                child: Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          example.ing.isEmpty ? '—' : example.ing,
+                          style: textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                  ],
+                        const SizedBox(height: 6),
+                        Text(
+                          example.rus.isEmpty ? '—' : example.rus,
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: Colors.blueGrey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -284,7 +270,7 @@ class _WordDetailScreenState extends State<WordDetailScreen> {
           if (_linkedExamples.isEmpty) ...[
             const SizedBox(height: 24),
             Text(
-              'Нет примеров (проверь ключ связи)',
+              'Нет примеров',
               style: textTheme.titleMedium?.copyWith(
                 color: Colors.redAccent,
               ),
@@ -294,7 +280,7 @@ class _WordDetailScreenState extends State<WordDetailScreen> {
           FilledButton(
             onPressed: () async {
               await AppLog.instance.add(
-                'Viewed word: ${item.word} (${item.translation})',
+                'Viewed word: ${item.ingush} (${item.russian})',
               );
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
