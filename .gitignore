@@ -15,6 +15,7 @@ downloads/
 eggs/
 .eggs/
 lib/
+!mobile_app/lib/
 lib64/
 parts/
 sdist/
@@ -205,3 +206,11 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+mobile_app/assets/icon/*.png
+mobile_app/assets/db/*.db
+mobile_app/build/
+.dart_tool/
+.idea/
+.vscode/
+*.iml
+*.log
