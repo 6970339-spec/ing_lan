@@ -23,25 +23,30 @@ jobs:
         with:
           channel: stable
 
-      - name: Prepare logs
+      - name: Build in CI (generate android project)
+        shell: bash
         run: |
-          mkdir -p ../build-logs
+          set +e
+          mkdir -p build-logs apk-out
           {
-            echo "== flutter --version ==";
-            flutter --version;
-            echo "";
-            echo "== flutter doctor -v ==";
-            flutter doctor -v;
-            echo "";
+            echo "== flutter --version =="; flutter --version; echo ""
+            echo "== flutter doctor -v =="; flutter doctor -v; echo ""
+            echo "== generate flutter android project in CI ==";
+            rm -rf ci_app
+            flutter create -t app --platforms=android ci_app
+            echo "== copy source from repo/mobile_app into ci_app ==";
+            rm -rf ci_app/lib
+            cp -R mobile_app/lib ci_app/lib
+            cp mobile_app/pubspec.yaml ci_app/pubspec.yaml
             echo "== flutter pub get ==";
-            flutter pub get;
-            echo "";
-            echo "== flutter build apk ==";
-            flutter build apk --debug -v;
-            echo "";
-            echo "== find flutter-apk outputs ==";
-            find build/app/outputs/flutter-apk -maxdepth 1 -type f -name "*.apk" -print -ls || true;
-          } 2>&1 | tee ../build-logs/build.log
+            (cd ci_app && flutter pub get)
+            echo "== flutter build apk (debug) ==";
+            (cd ci_app && flutter build apk --debug -v)
+            echo "== find APK outputs ==";
+            find ci_app/build/app/outputs/flutter-apk -maxdepth 1 -type f -name "*.apk" -print -ls || true
+            cp -v ci_app/build/app/outputs/flutter-apk/*.apk apk-out/ || true
+          } 2>&1 | tee build-logs/build.log
+          exit ${PIPESTATUS[0]}
 
       - name: Upload build logs (always)
         if: always()
@@ -55,5 +60,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-apk
-          path: mobile_app/build/app/outputs/flutter-apk/*.apk
+          path: apk-out/*.apk
           if-no-files-found: error
