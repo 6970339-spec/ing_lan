@@ -210,7 +210,10 @@ mobile_app/assets/icon/*.png
 mobile_app/assets/db/*.db
 mobile_app/build/
 .dart_tool/
+mobile_app/.dart_tool/
 .idea/
 .vscode/
 *.iml
 *.log
+**/*.png
+**/*.db
