@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'app_log.dart';
+import 'settings/settings_screen.dart';
 import 'training/training_screen.dart';
 import 'words/words_screen.dart';
 
@@ -43,7 +44,14 @@ class IngTrainerApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
+        brightness: Brightness.dark,
       ),
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        useMaterial3: true,
+        brightness: Brightness.dark,
+      ),
+      themeMode: ThemeMode.dark,
       home: const HomeScreen(),
     );
   }
@@ -57,6 +65,18 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('IngTrainer'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (BuildContext context) => const SettingsScreen(),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: Center(
         child: Column(
@@ -96,6 +116,19 @@ class HomeScreen extends StatelessWidget {
                 );
               },
               child: const Text('Тренировка'),
+            ),
+            const SizedBox(height: 12),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (BuildContext context) => const WordsScreen(
+                      initialFavoritesOnly: true,
+                    ),
+                  ),
+                );
+              },
+              child: const Text('Избранное'),
             ),
           ],
         ),

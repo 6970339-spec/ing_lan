@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../app_log.dart';
-import '../seed_loader.dart';
+import '../data/data_repo.dart';
+import '../data/models.dart';
 
 class TrainingScreen extends StatefulWidget {
   const TrainingScreen({super.key});
@@ -18,7 +19,8 @@ class _TrainingScreenState extends State<TrainingScreen> {
   static const String _unknownKey = 'training_unknown_count';
   static const String _sessionsKey = 'training_total_sessions';
 
-  final SeedLoader _seedLoader = const SeedLoader();
+  static const int _sessionSize = 10;
+  final DataRepo _dataRepo = DataRepo.instance;
   final Random _random = Random();
 
   List<WordItem> _items = <WordItem>[];
@@ -45,13 +47,16 @@ class _TrainingScreenState extends State<TrainingScreen> {
       _knownCount = prefs.getInt(_knownKey) ?? 0;
       _unknownCount = prefs.getInt(_unknownKey) ?? 0;
       _totalSessions = prefs.getInt(_sessionsKey) ?? 0;
-      final List<WordItem> loaded = await _seedLoader.loadWords();
-      loaded.shuffle(_random);
+      final List<WordItem> loaded = await _dataRepo.getWords();
+      final List<WordItem> shuffled = List<WordItem>.from(loaded)
+        ..shuffle(_random);
+      final List<WordItem> sessionItems =
+          shuffled.take(_sessionSize).toList(growable: false);
       if (!mounted) {
         return;
       }
       setState(() {
-        _items = loaded;
+        _items = sessionItems;
         _index = 0;
         _showTranslation = false;
         _loading = false;
@@ -161,7 +166,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
           ),
           const SizedBox(height: 24),
           Text(
-            item.word.isEmpty ? '—' : item.word,
+            item.ingush.isEmpty ? '—' : item.ingush,
             style: Theme.of(context).textTheme.headlineMedium,
             textAlign: TextAlign.center,
           ),
@@ -178,7 +183,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
           const SizedBox(height: 24),
           if (_showTranslation)
             Text(
-              item.translation.isEmpty ? 'Нет перевода' : item.translation,
+              item.russian.isEmpty ? 'Нет перевода' : item.russian,
               style: Theme.of(context).textTheme.titleLarge,
               textAlign: TextAlign.center,
             )

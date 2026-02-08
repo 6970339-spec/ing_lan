@@ -6,7 +6,12 @@ import '../data/models.dart';
 import 'favorites_store.dart';
 
 class WordsScreen extends StatefulWidget {
-  const WordsScreen({super.key});
+  const WordsScreen({
+    super.key,
+    this.initialFavoritesOnly = false,
+  });
+
+  final bool initialFavoritesOnly;
 
   @override
   State<WordsScreen> createState() => _WordsScreenState();
@@ -18,11 +23,12 @@ class _WordsScreenState extends State<WordsScreen> {
   final FavoritesStore _favoritesStore = FavoritesStore();
   List<WordItem> _items = <WordItem>[];
   bool _loading = true;
-  bool _favoritesOnly = false;
+  late bool _favoritesOnly;
 
   @override
   void initState() {
     super.initState();
+    _favoritesOnly = widget.initialFavoritesOnly;
     _load();
     _searchController.addListener(_onSearchChanged);
   }
