@@ -61,7 +61,7 @@ class _WordsScreenState extends State<WordsScreen> {
     final String query = _searchController.text.trim().toLowerCase();
     return _items.where((WordItem item) {
       if (_favoritesOnly &&
-          !_favoritesStore.isFavorite(item.id.toString())) {
+          !_favoritesStore.isFavorite(item.id)) {
         return false;
       }
       if (query.isEmpty) {
@@ -127,14 +127,13 @@ class _WordsScreenState extends State<WordsScreen> {
                               children: [
                                 IconButton(
                                   icon: Icon(
-                                    _favoritesStore
-                                            .isFavorite(item.id.toString())
+                                    _favoritesStore.isFavorite(item.id)
                                         ? Icons.star
                                         : Icons.star_border,
                                   ),
                                   onPressed: () async {
                                     await _favoritesStore.toggle(
-                                      item.id.toString(),
+                                      item.id,
                                     );
                                     if (mounted) {
                                       setState(() {});
@@ -186,7 +185,7 @@ class WordDetailScreen extends StatefulWidget {
 
 class _WordDetailScreenState extends State<WordDetailScreen> {
   bool get _isFavorite =>
-      widget.favoritesStore.isFavorite(widget.item.id.toString());
+      widget.favoritesStore.isFavorite(widget.item.id);
   final DataRepo _dataRepo = DataRepo.instance;
   List<ExampleItem> _linkedExamples = <ExampleItem>[];
   bool _loadingExamples = true;
@@ -325,7 +324,7 @@ class _WordDetailScreenState extends State<WordDetailScreen> {
           OutlinedButton(
             onPressed: () async {
               final bool nowFavorite =
-                  await widget.favoritesStore.toggle(item.id.toString());
+                  await widget.favoritesStore.toggle(item.id);
               widget.onToggle();
               if (mounted) {
                 setState(() {});

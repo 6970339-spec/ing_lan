@@ -5,10 +5,10 @@ import '../app_log.dart';
 class FavoritesStore {
   static const String _prefsKey = 'favorites_word_ids';
 
-  Set<String> _favoriteIds = <String>{};
+  Set<int> _favoriteIds = <int>{};
   bool _loaded = false;
 
-  Set<String> get favoriteIds => _favoriteIds;
+  Set<int> get favoriteIds => _favoriteIds;
   bool get isLoaded => _loaded;
 
   Future<void> load() async {
@@ -16,11 +16,16 @@ class FavoritesStore {
       return;
     }
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    _favoriteIds = prefs.getStringList(_prefsKey)?.toSet() ?? <String>{};
+    final List<String> rawIds =
+        prefs.getStringList(_prefsKey) ?? <String>[];
+    _favoriteIds = rawIds
+        .map((String value) => int.tryParse(value))
+        .whereType<int>()
+        .toSet();
     _loaded = true;
   }
 
-  Future<bool> toggle(String id) async {
+  Future<bool> toggle(int id) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final bool isFavorite;
     if (_favoriteIds.contains(id)) {
@@ -30,17 +35,22 @@ class FavoritesStore {
       _favoriteIds.add(id);
       isFavorite = true;
     }
-    await prefs.setStringList(_prefsKey, _favoriteIds.toList());
-    await AppLog.instance.add('Favorites: toggle $id => $isFavorite');
+    await prefs.setStringList(
+      _prefsKey,
+      _favoriteIds.map((int value) => value.toString()).toList(),
+    );
+    await AppLog.instance.i(
+      'Favorites: toggle $id => $isFavorite (size=${_favoriteIds.length})',
+    );
     return isFavorite;
   }
 
-  bool isFavorite(String id) => _favoriteIds.contains(id);
+  bool isFavorite(int id) => _favoriteIds.contains(id);
 
   Future<void> clear() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    _favoriteIds = <String>{};
+    _favoriteIds = <int>{};
     await prefs.remove(_prefsKey);
-    await AppLog.instance.add('Favorites: cleared');
+    await AppLog.instance.i('Favorites: cleared');
   }
 }
