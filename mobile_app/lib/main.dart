@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'app_log.dart';
+import 'logs/logs_screen.dart';
 import 'settings/settings_screen.dart';
 import 'training/training_screen.dart';
 import 'words/words_screen.dart';

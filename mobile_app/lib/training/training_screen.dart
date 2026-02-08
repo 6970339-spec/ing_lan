@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../app_log.dart';
 import '../data/data_repo.dart';
 import '../data/models.dart';
+import '../logs/logs_screen.dart';
 
 class TrainingScreen extends StatefulWidget {
   const TrainingScreen({super.key});
@@ -27,6 +28,8 @@ class _TrainingScreenState extends State<TrainingScreen> {
   int _index = 0;
   bool _loading = true;
   bool _showTranslation = false;
+  String? _loadError;
+  String? _warningMessage;
 
   int _knownCount = 0;
   int _unknownCount = 0;
@@ -60,6 +63,10 @@ class _TrainingScreenState extends State<TrainingScreen> {
         _index = 0;
         _showTranslation = false;
         _loading = false;
+        _loadError = null;
+        _warningMessage = loaded.length < _sessionSize
+            ? 'Доступно меньше $_sessionSize слов, используем ${loaded.length}.'
+            : null;
         _totalSessions += 1;
       });
       await prefs.setInt(_sessionsKey, _totalSessions);
@@ -75,6 +82,8 @@ class _TrainingScreenState extends State<TrainingScreen> {
       setState(() {
         _items = <WordItem>[];
         _loading = false;
+        _loadError = 'Данные не загружены. Проверь words.json/examples.json';
+        _warningMessage = null;
       });
     }
   }
@@ -117,11 +126,43 @@ class _TrainingScreenState extends State<TrainingScreen> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : _items.isEmpty
-              ? const Center(child: Text('Нет данных для тренировки'))
-              : _index >= _items.length
-                  ? _buildFinishedState()
-                  : _buildTrainingState(),
+          : _loadError != null
+              ? _buildEmptyState(_loadError!)
+              : _items.isEmpty
+                  ? _buildEmptyState(
+                      'Данные не загружены. Проверь words.json/examples.json',
+                    )
+                  : _index >= _items.length
+                      ? _buildFinishedState()
+                      : _buildTrainingState(),
+    );
+  }
+
+  Widget _buildEmptyState(String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              message,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (BuildContext context) => const LogsScreen(),
+                  ),
+                );
+              },
+              child: const Text('Открыть Логи'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -164,6 +205,16 @@ class _TrainingScreenState extends State<TrainingScreen> {
             style: Theme.of(context).textTheme.titleMedium,
             textAlign: TextAlign.center,
           ),
+          if (_warningMessage != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              _warningMessage!,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.orangeAccent,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+          ],
           const SizedBox(height: 24),
           Text(
             item.ingush.isEmpty ? '—' : item.ingush,

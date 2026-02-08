@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../app_log.dart';
 import '../data/data_repo.dart';
 import '../data/models.dart';
+import '../logs/logs_screen.dart';
 import 'favorites_store.dart';
 
 class WordsScreen extends StatefulWidget {
@@ -24,6 +25,7 @@ class _WordsScreenState extends State<WordsScreen> {
   List<WordItem> _items = <WordItem>[];
   bool _loading = true;
   late bool _favoritesOnly;
+  String? _loadError;
 
   @override
   void initState() {
@@ -37,15 +39,32 @@ class _WordsScreenState extends State<WordsScreen> {
     setState(() {
       _loading = true;
     });
-    await _favoritesStore.load();
-    final List<WordItem> words = await _dataRepo.getWords();
-    if (!mounted) {
-      return;
+    try {
+      await _favoritesStore.load();
+      final List<WordItem> words = await _dataRepo.getWords();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _items = words;
+        _loading = false;
+        _loadError = null;
+      });
+    } catch (error, stackTrace) {
+      await AppLog.instance.e(
+        'WordsScreen: failed to load words.',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _items = <WordItem>[];
+        _loading = false;
+        _loadError = 'Данные не загружены. Проверь words.json/examples.json';
+      });
     }
-    setState(() {
-      _items = words;
-      _loading = false;
-    });
   }
 
   void _onSearchChanged() {
@@ -111,63 +130,97 @@ class _WordsScreenState extends State<WordsScreen> {
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
-                : filtered.isEmpty
-                    ? const Center(child: Text('Нет слов'))
-                    : ListView.separated(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: filtered.length,
-                        separatorBuilder: (_, __) => const Divider(height: 24),
-                        itemBuilder: (BuildContext context, int index) {
-                          final WordItem item = filtered[index];
-                          return ListTile(
-                            title: Text(
-                              item.ingush.isEmpty ? '—' : item.ingush,
-                            ),
-                            subtitle: Text(
-                              item.russian.isEmpty
-                                  ? 'Нет перевода'
-                                  : item.russian,
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: Icon(
-                                    _favoritesStore.isFavorite(item.id)
-                                        ? Icons.star
-                                        : Icons.star_border,
-                                  ),
-                                  onPressed: () async {
-                                    await _favoritesStore.toggle(
-                                      item.id,
-                                    );
-                                    if (mounted) {
-                                      setState(() {});
-                                    }
-                                  },
+                : _loadError != null
+                    ? _buildEmptyState(_loadError!)
+                    : filtered.isEmpty
+                        ? _buildEmptyState(
+                            'Данные не загружены. '
+                            'Проверь words.json/examples.json',
+                          )
+                        : ListView.separated(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: filtered.length,
+                            separatorBuilder: (_, __) =>
+                                const Divider(height: 24),
+                            itemBuilder: (BuildContext context, int index) {
+                              final WordItem item = filtered[index];
+                              return ListTile(
+                                title: Text(
+                                  item.ingush.isEmpty ? '—' : item.ingush,
                                 ),
-                                const Icon(Icons.chevron_right),
-                              ],
-                            ),
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute<void>(
+                                subtitle: Text(
+                                  item.russian.isEmpty
+                                      ? 'Нет перевода'
+                                      : item.russian,
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: Icon(
+                                        _favoritesStore.isFavorite(item.id)
+                                            ? Icons.star
+                                            : Icons.star_border,
+                                      ),
+                                      onPressed: () async {
+                                        await _favoritesStore.toggle(
+                                          item.id,
+                                        );
+                                        if (mounted) {
+                                          setState(() {});
+                                        }
+                                      },
+                                    ),
+                                    const Icon(Icons.chevron_right),
+                                  ],
+                                ),
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute<void>(
                                       builder: (BuildContext context) =>
-                                      WordDetailScreen(
+                                          WordDetailScreen(
                                         item: item,
                                         favoritesStore: _favoritesStore,
                                         onToggle: () {
                                           setState(() {});
                                         },
                                       ),
-                                ),
+                                    ),
+                                  );
+                                },
                               );
                             },
-                          );
-                        },
-                      ),
+                          ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              message,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (BuildContext context) => const LogsScreen(),
+                  ),
+                );
+              },
+              child: const Text('Открыть Логи'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -227,7 +280,7 @@ class _WordDetailScreenState extends State<WordDetailScreen> {
       setState(() {
         _linkedExamples = <ExampleItem>[];
         _loadingExamples = false;
-        _loadError = 'Не удалось загрузить примеры';
+        _loadError = 'Данные не загружены. Проверь words.json/examples.json';
       });
     }
   }
@@ -309,6 +362,19 @@ class _WordDetailScreenState extends State<WordDetailScreen> {
                 color: _loadError == null ? Colors.redAccent : Colors.orange,
               ),
             ),
+            if (_loadError != null) ...[
+              const SizedBox(height: 12),
+              OutlinedButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (BuildContext context) => const LogsScreen(),
+                    ),
+                  );
+                },
+                child: const Text('Открыть Логи'),
+              ),
+            ],
           ],
           const SizedBox(height: 24),
           FilledButton(
