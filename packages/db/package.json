@@ -1,0 +1,1 @@
+{"name":"@vibe/db","version":"0.0.0","type":"module","dependencies":{"drizzle-orm":"0.36.4"},"scripts":{"build":"tsc -p tsconfig.json","typecheck":"tsc -p tsconfig.json --noEmit","lint":"biome check src","test":"vitest run"}}

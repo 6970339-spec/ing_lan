@@ -1,0 +1,9 @@
+topics:
+  - chat.user.message
+  - chat.agent.message
+  - build.requested
+  - build.plan.proposed
+  - build.plan.approved
+  - build.plan.rejected
+  - artifact.diff.created
+  - artifact.review.completed
