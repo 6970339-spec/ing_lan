@@ -5,5 +5,10 @@
 - build.plan.proposed: producer planner; consumer reviewer
 - build.plan.approved: producer reviewer; consumer codegen
 - build.plan.rejected: producer reviewer; consumer web
-- artifact.diff.created: producer codegen; consumer reviewer
+- artifact.diff.created: producer codegen; consumer reviewer,sandbox-runner
 - artifact.review.completed: producer reviewer; consumer orchestrator(api)
+- sandbox.lifecycle.started: producer sandbox-runner; consumer all
+- sandbox.lifecycle.stopped: producer sandbox-runner; consumer orchestrator
+- sandbox.command.run: producer any agent; consumer sandbox-runner
+- sandbox.command.output: producer sandbox-runner; consumer caller via causation_id
+- sandbox.fs.applied: producer sandbox-runner; consumer reviewer,test-runner

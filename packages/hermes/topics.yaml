@@ -7,3 +7,8 @@ topics:
   - build.plan.rejected
   - artifact.diff.created
   - artifact.review.completed
+  - sandbox.lifecycle.started
+  - sandbox.lifecycle.stopped
+  - sandbox.command.run
+  - sandbox.command.output
+  - sandbox.fs.applied
