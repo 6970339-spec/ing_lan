@@ -12,3 +12,7 @@ topics:
   - sandbox.command.run
   - sandbox.command.output
   - sandbox.fs.applied
+  - test.run.requested
+  - test.run.completed
+  - build.regression.detected
+  - build.milestone.advance

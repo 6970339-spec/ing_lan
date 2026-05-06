@@ -19,3 +19,8 @@ Dry-run mode: if `E2B_API_KEY` is unset, sandbox-runner does not call E2B and re
 ## Dev
 - `pnpm dev` runs web + api + redis/postgres (docker-compose)
 - `pnpm validate` checks Hermes atomic topic invariants
+
+## Regression fence (M4)
+- Milestone completes only when `test.run.completed` has `passed=true` and `regressions=[]`.
+- Regressions trigger `build.regression.detected`; codegen retries up to 3 attempts, then emits final halt chat message.
+- Baseline is Redis-backed per build at `build:<build_id>:test-baseline`.

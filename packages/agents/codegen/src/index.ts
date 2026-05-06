@@ -11,8 +11,23 @@ export const processApprovedPlan = async (router: ReturnType<typeof createRouter
     await pub(redis, { message_id: crypto.randomUUID(), topic: 'chat.agent.message', schema_version: 1, correlation_id: env.correlation_id, causation_id: env.message_id, producer: 'codegen', ts: new Date().toISOString(), payload: { build_id: env.payload.build_id, agent: 'codegen', text: 'Patch too large; TODO M3 sandbox-S3 wiring.', kind: 'final' } });
     return;
   }
-  await pub(redis, { message_id: crypto.randomUUID(), topic: 'artifact.diff.created', schema_version: 1, correlation_id: env.correlation_id, causation_id: env.message_id, producer: 'codegen', ts: new Date().toISOString(), payload: { build_id: env.payload.build_id, milestone_id: result.milestone_id, patches: result.patches } });
+  await pub(redis, { message_id: crypto.randomUUID(), topic: 'artifact.diff.created', schema_version: 1, correlation_id: env.correlation_id, causation_id: env.message_id, producer: 'codegen', ts: new Date().toISOString(), payload: { build_id: env.payload.build_id, milestone_id: result.milestone_id, patches: result.patches, retry_attempt: 0 } });
 };
 const redis = makeRedis(process.env.REDIS_URL ?? 'redis://localhost:6379');
 const router = createRouter({ anthropicApiKey: process.env.ANTHROPIC_API_KEY });
 subscribe(redis, 'build.plan.approved', (env) => processApprovedPlan(router, env as never, publish, redis));
+
+
+subscribe(redis, 'build.regression.detected', async (env) => {
+  const payload = env.payload as { build_id: string; milestone_id: string; failing_tests: Array<{ name: string; error: string }>; retry_attempt: number };
+  const retryKey = `build:${payload.build_id}:retries:${payload.milestone_id}`;
+  const retryAttempt = Number((await redis.get(retryKey)) ?? '0') + 1;
+  await redis.set(retryKey, String(retryAttempt));
+  if (retryAttempt > 3) {
+    await publish(redis, { message_id: crypto.randomUUID(), topic: 'chat.agent.message', schema_version: 1, correlation_id: env.correlation_id, causation_id: env.message_id, producer: 'codegen', ts: new Date().toISOString(), payload: { build_id: payload.build_id, agent: 'codegen', text: `Milestone ${payload.milestone_id} failed after 3 retries; build halted`, kind: 'final' } });
+    return;
+  }
+  const fixed = await router.complete({ role: 'codegen', messages: [{ role: 'system', content: 'fix these regressions without breaking other tests' }, { role: 'user', content: JSON.stringify(payload.failing_tests) }] });
+  const parsed = Resp.parse(JSON.parse(fixed.text));
+  await publish(redis, { message_id: crypto.randomUUID(), topic: 'artifact.diff.created', schema_version: 1, correlation_id: env.correlation_id, causation_id: env.message_id, producer: 'codegen', ts: new Date().toISOString(), payload: { build_id: payload.build_id, milestone_id: parsed.milestone_id, patches: parsed.patches, retry_attempt: retryAttempt } });
+});

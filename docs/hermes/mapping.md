@@ -10,5 +10,9 @@
 - sandbox.lifecycle.started: producer sandbox-runner; consumer all
 - sandbox.lifecycle.stopped: producer sandbox-runner; consumer orchestrator
 - sandbox.command.run: producer any agent; consumer sandbox-runner
-- sandbox.command.output: producer sandbox-runner; consumer caller via causation_id
+- sandbox.command.output: producer sandbox-runner; consumer caller via causation_id,test-runner
 - sandbox.fs.applied: producer sandbox-runner; consumer reviewer,test-runner
+- test.run.requested: producer orchestrator; consumer test-runner
+- test.run.completed: producer test-runner; consumer orchestrator,web
+- build.regression.detected: producer test-runner; consumer codegen
+- build.milestone.advance: producer orchestrator; consumer codegen
