@@ -1,0 +1,18 @@
+topics:
+  - chat.user.message
+  - chat.agent.message
+  - build.requested
+  - build.plan.proposed
+  - build.plan.approved
+  - build.plan.rejected
+  - artifact.diff.created
+  - artifact.review.completed
+  - sandbox.lifecycle.started
+  - sandbox.lifecycle.stopped
+  - sandbox.command.run
+  - sandbox.command.output
+  - sandbox.fs.applied
+  - test.run.requested
+  - test.run.completed
+  - build.regression.detected
+  - build.milestone.advance

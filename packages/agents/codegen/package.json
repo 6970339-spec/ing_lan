@@ -1,0 +1,12 @@
+{
+  "name": "@vibe/agent-codegen",
+  "version": "0.0.0",
+  "type": "module",
+  "dependencies": {
+    "@vibe/hermes": "workspace:*",
+    "@vibe/llm-router": "workspace:*",
+    "pino": "9.5.0",
+    "zod": "3.23.8"
+  },
+  "scripts": {"build":"tsc -p tsconfig.json","typecheck":"tsc -p tsconfig.json --noEmit","lint":"biome check src","test":"vitest run"}
+}
